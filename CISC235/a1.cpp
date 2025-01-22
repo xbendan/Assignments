@@ -1,36 +1,105 @@
+/**
+ * @file a1.cpp
+ * @author Zirui Wang (21zw105@queensu.ca)
+ * @brief
+ * @version 0.1
+ * @date 2025-01-20
+ *
+ * @copyright Copyright (c) 2025
+ *
+ * I confirm that this submission is my own work and is consistent with the
+ * Queen's regulations on Academic Integrity
+ *
+ * Part 3 Answer:
+ * The strategy I choose is double the capacity every time I increase the size
+ * of array. I would say this is already a good choice consider that we don't
+ * know the exact capacity of results, this balance the usage of elements copy
+ * and re-alloc memory, we do can increase the capacity by a constant number so
+ * we don't waste a ton of memory, but this increase the time of re-alloc array.
+ * In addition, as I know, double the capacity is the most common way for
+ * ensuring the array or list capacity, Java does the same thing on ArrayList.
+ */
+
+#include <cstring>
+#include <initializer_list>
 #include <iostream>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-template <typename T, unsigned N = 100>
+template <typename T>
 struct stack
 {
-    void push(T val)
+    stack(int cap = 10)
+        : m_values(new T[cap])
+        , m_count(0)
+        , m_size(cap)
     {
-        if (m_size >= N) {
+    }
+
+    ~stack()
+    {
+        if (m_values != nullptr) {
+            delete[] m_values;
+        }
+        m_count = 0;
+        m_size  = 0;
+    }
+
+    void ensure() { ensure(m_count + 1); }
+
+    void ensure(int cap)
+    {
+        if (cap <= m_size) {
             return;
         }
-        m_values[m_size++] = val;
+        resize(m_size * 2);
+    }
+
+    void resize(int cap)
+    {
+        if (cap == m_size) {
+            return;
+        }
+        T* arr = new T[cap];
+        std::memset(arr, 0, sizeof(T) * cap);
+
+        int c = m_size < cap ? m_size : cap;
+        for (int i = 0; i < c; i++) {
+            arr[i] = m_values[i];
+        }
+
+        delete[] m_values;
+        m_values = arr;
+        m_size   = cap;
+    }
+
+    void push(T val)
+    {
+        ensure();
+        m_values[m_count] = val;
+        m_count++;
     }
 
     T pop()
     {
-        if (m_size == 0) {
+        if (m_count == 0) {
             return {};
         }
-        T val = std::move(m_values[m_size - 1]);
-        m_size--;
+        T val = std::move(m_values[m_count - 1]);
+        m_count--;
 
         return val;
     }
 
-    T const& peek() { return m_values[m_size - 1]; }
+    T const& peek() { return m_values[m_count - 1]; }
 
-    bool isEmpty() { return m_size == 0; }
+    bool isEmpty() { return m_count == 0; }
 
-    T   m_values[N];
-    int m_size{ 0 };
+    T*  m_values;
+    // T   m_values[10];
+    int m_count{ 0 };
+    int m_size{ 10 };
 };
 
 template <typename T1, typename T2>
@@ -91,8 +160,6 @@ sf1(int n)
     }
     while (!s.isEmpty())
         std::cout << s.pop() << ' ';
-
-    std::cout << std::endl;
 }
 
 void
@@ -125,8 +192,6 @@ sf2(int n)
                 std::cout << val << ' ';
         }
     }
-
-    std::cout << std::endl;
 }
 
 void
@@ -199,15 +264,45 @@ sf4(int a, int b)
     }
 }
 
+void
+test(void (*func)(int), std::initializer_list<int> list)
+{
+    for (int t : list) {
+        func(t);
+        std::cout << std::endl;
+    }
+}
+void
+test(void (*func)(int, int), std::initializer_list<std::tuple<int, int>> list)
+{
+    for (std::tuple<int, int> tuple : list) {
+        func(std::get<0>(tuple), std::get<1>(tuple));
+        std::cout << std::endl;
+    }
+}
+
 int
 main()
 {
-    std::cout << "Recursive: \n";
-    f4(4, 19);
-    std::cout << std::endl;
-    std::cout << "Non-recursive: \n";
-    sf4(4, 19);
-    std::cout << std::endl;
+    std::cout << "Function 1 Recursive: \n";
+    test(f1, { 7, 18, 19, 22, 105 });
+    std::cout << "Function 1 Non-recursive: \n";
+    test(sf1, { 7, 18, 19, 22, 105 });
+
+    std::cout << "Function 2 Recursive: \n";
+    test(f2, { 7, 18, 19, 22, 43 });
+    std::cout << "Function 2 Non-recursive: \n";
+    test(sf2, { 7, 18, 19, 22, 43 });
+
+    std::cout << "Function 3 Recursive: \n";
+    test(f3, { { 0, 7 }, { 1, 18 }, { 4, 19 }, { -1, 22 } });
+    std::cout << "Function 3 Non-recursive: \n";
+    test(sf3, { { 0, 7 }, { 1, 18 }, { 4, 19 }, { -1, 22 } });
+
+    std::cout << "Function 4 Recursive: \n";
+    test(f4, { { 0, 7 }, { 1, 18 }, { 4, 19 }, { -1, 22 } });
+    std::cout << "Function 4 Non-recursive: \n";
+    test(sf4, { { 0, 7 }, { 1, 18 }, { 4, 19 }, { -1, 22 } });
 
     return 0;
 }
